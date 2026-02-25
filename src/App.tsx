@@ -1,25 +1,41 @@
 import { BrowserRouter, Routes, Route } from 'react-router-dom';
-import Home           from './pages/Home';
-import PostList       from './pages/PostList';
-import ScheduleEditor from './pages/ScheduleEditor';
-import Results        from './pages/Results';
+import { AuthProvider } from './context/AuthContext.tsx';
+import ProtectedRoute  from './components/ProtectedRoute.tsx';
+import Login           from './pages/Login.tsx';
+import Home            from './pages/Home.tsx';
+import PostList        from './pages/PostList.tsx';
+import ScheduleEditor  from './pages/ScheduleEditor.tsx';
+import Results         from './pages/Results.tsx';
+import History         from './pages/History.tsx';
+import Admin           from './pages/Admin.tsx';
 
 export default function App() {
   return (
-    <BrowserRouter>
-      <div className="min-h-screen bg-gray-50 text-gray-800">
-         <div className="flex-1">
+    <AuthProvider>
+      <BrowserRouter>
         <Routes>
-          <Route path="/"                              element={<Home />} />
-          <Route path="/device/:deviceId/posts"        element={<PostList />} />
-          <Route path="/post/:postId/schedule"         element={<ScheduleEditor />} />
-          <Route path="/device/:deviceId/results"      element={<Results />} />
+          <Route path="/login" element={<Login />} />
+
+          <Route path="/" element={
+            <ProtectedRoute><Home /></ProtectedRoute>
+          }/>
+          <Route path="/device/:deviceId/posts" element={
+            <ProtectedRoute><PostList /></ProtectedRoute>
+          }/>
+          <Route path="/post/:postId/schedule" element={
+            <ProtectedRoute><ScheduleEditor /></ProtectedRoute>
+          }/>
+          <Route path="/device/:deviceId/results" element={
+            <ProtectedRoute><Results /></ProtectedRoute>
+          }/>
+          <Route path="/history" element={
+            <ProtectedRoute><History /></ProtectedRoute>
+          }/>
+          <Route path="/admin" element={
+            <ProtectedRoute adminOnly><Admin /></ProtectedRoute>
+          }/>
         </Routes>
-      </div>
-      <footer className="text-center py-4 text-sm text-gray-400">
-          © Quentin Millancourt
-        </footer>
-      </div>
-    </BrowserRouter>
+      </BrowserRouter>
+    </AuthProvider>
   );
 }
