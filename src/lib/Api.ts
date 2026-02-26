@@ -11,6 +11,9 @@ export interface Schedule {
   start_time: string | null;
   end_time: string | null;
   is_closed: boolean;
+  has_break?: boolean;
+  break_start?: string | null;
+  break_end?: string | null;
 }
 export interface Holiday  { id: number; date: string; label: string }
 
@@ -85,7 +88,16 @@ export async function upsertSchedules(postId: number, rows: Omit<Schedule, 'id' 
   const { error } = await supabase
     .from('schedules')
     .upsert(
-      rows.map(r => ({ ...r, post_id: postId })),
+      rows.map(r => ({
+        post_id:     postId,
+        day_of_week: r.day_of_week,
+        start_time:  r.start_time,
+        end_time:    r.end_time,
+        is_closed:   r.is_closed,
+        has_break:   r.has_break   ?? false,
+        break_start: r.has_break   ? r.break_start : null,
+        break_end:   r.has_break   ? r.break_end   : null,
+      })),
       { onConflict: 'post_id,day_of_week' }
     );
   if (error) throw error;
@@ -138,7 +150,6 @@ export async function saveCalculation(
 export async function getCalculations(): Promise<Calculation[]> {
   const { data: { user } } = await supabase.auth.getUser();
 
-  // Vérifier si admin
   const { data: profile } = await supabase
     .from('profiles')
     .select('role')
@@ -147,13 +158,13 @@ export async function getCalculations(): Promise<Calculation[]> {
 
   const isAdmin = profile?.role === 'admin';
 
-  const { data, error } = await supabase
-    .from('calculations')
-    .select(isAdmin ? '*, profiles(email, full_name)' : '*')
-    .order('created_at', { ascending: false });
+  const query = isAdmin
+    ? supabase.from('calculations').select('*, profiles(email, full_name)').order('created_at', { ascending: false })
+    : supabase.from('calculations').select('*').order('created_at', { ascending: false });
 
+  const { data, error } = await query;
   if (error) throw error;
-  return data ?? [];
+  return (data ?? []) as Calculation[];
 }
 
 export async function deleteCalculation(id: number): Promise<void> {
